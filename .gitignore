@@ -1,0 +1,38 @@
+# Unity generated folders
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+MemoryCaptures/
+UserSettings/
+
+# Unity auto-generated files
+*.csproj
+*.unityproj
+*.sln
+*.user
+*.pidb
+*.booproj
+*.svd
+
+# VS Code / JetBrains / IDEs
+.vscode/
+.idea/
+*.suo
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Builds and binaries
+*.apk
+*.aab
+*.exe
+*.zip
+
+# LFS-recommended or large auto-generated stuff
+*.dll
+*.dylib
+*.so
