@@ -10,14 +10,28 @@ public class InteractTrigger : MonoBehaviour
 
     void Awake()
     {
-        interactable = GetComponent<IInteractable>();
+        // Tries to find IInteractable on self, children, or parent
+        interactable = GetComponent<IInteractable>() 
+                    ?? GetComponentInChildren<IInteractable>() 
+                    ?? GetComponentInParent<IInteractable>();
     }
 
     void Update()
     {
-        if (playerInRange && Input.GetKeyDown(KeyCode.E) && interactable != null)
+        if (playerInRange && Input.GetKeyDown(KeyCode.E))
         {
-            interactable.Interact();
+            // If panel is open, close it
+            if (UIManager.UIManagerInstance != null && UIManager.UIManagerInstance.IsMessageOpen())
+            {
+                UIManager.UIManagerInstance.HideMessage();
+                return;
+            }
+
+            // Otherwise interact as normal
+            if (interactable != null)
+            {
+                interactable.Interact();
+            }
         }
     }
 
