@@ -19,8 +19,7 @@ public class InventoryManager : MonoBehaviour
             return;
         }
         Instance = this;
-
-        DontDestroyOnLoad(gameObject.transform.root.gameObject);
+    GameObjectUtils.PreserveRoot(this);
     }
 
     public void AddItem(string itemName)

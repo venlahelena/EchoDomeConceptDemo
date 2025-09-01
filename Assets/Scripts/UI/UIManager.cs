@@ -5,7 +5,7 @@ using TMPro;
 
 public class UIManager : MonoBehaviour
 {
-    public static UIManager UIManagerInstance;
+    public static UIManager Instance;
 
     [Header("References")]
     public GameObject messagePanel;
@@ -13,10 +13,15 @@ public class UIManager : MonoBehaviour
 
     private void Awake()
     {
-        if (UIManagerInstance == null)
-            UIManagerInstance = this;
+        if (Instance == null)
+            Instance = this;
         else
+        {
             Destroy(gameObject); // Prevent duplicates
+            return;
+        }
+
+    GameObjectUtils.PreserveRoot(this);
     }
 
     public void ShowMessage(string message)
@@ -25,6 +30,10 @@ public class UIManager : MonoBehaviour
         {
             messageText.text = message;
             messagePanel.SetActive(true);
+        }
+        else
+        {
+            Debug.LogWarning("UIManager: messagePanel or messageText not assigned in inspector.");
         }
     }
 

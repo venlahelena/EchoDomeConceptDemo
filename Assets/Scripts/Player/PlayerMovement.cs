@@ -44,6 +44,17 @@ public class PlayerMovement : MonoBehaviour
             Vector3 clickPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             clickPos.z = transform.position.z;
 
+            // First, let the InteractionManager try to handle this click (nearest interactable).
+            if (InteractionManager.Instance != null)
+            {
+                bool handled = InteractionManager.Instance.ClickInteractAt(clickPos);
+                if (handled)
+                {
+                    // InteractionManager or the interactable will handle movement via MoveToWithInteraction if needed.
+                    return;
+                }
+            }
+
             Vector2 feetPoint = clickPos;
             if (feetPosition != null)
             {

@@ -46,39 +46,42 @@ public class InventoryUI : MonoBehaviour
             Debug.LogWarning("InventoryManager instance is null!");
             return;
         }
-
-        foreach (Transform child in slotParent)
-        {
-            Destroy(child.gameObject);
-        }
-
+        // Simple pooling: reuse existing children if available, otherwise instantiate
         List<string> items = InventoryManager.Instance.GetItems();
         if (items == null) return;
 
-        foreach (string item in items)
+        // Ensure the prefab is set
+        if (slotPrefab == null)
         {
-            if (slotPrefab == null)
-            {
-                Debug.LogError("slotPrefab is NULL!");
-                return;
-            }
+            Debug.LogError("slotPrefab is NULL!");
+            return;
+        }
 
-            GameObject slot = Instantiate(slotPrefab, slotParent);
-            InventorySlot inventorySlot = slot.GetComponent<InventorySlot>();
-
-            if (inventorySlot == null)
+        // Reuse existing children up to count, instantiate extra if needed
+        int index = 0;
+        for (; index < items.Count; index++)
+        {
+            var slotComp = UIUtils.GetOrCreateChildComponent<InventorySlot>(slotParent, slotPrefab, index);
+            if (slotComp == null) continue;
+            if (slotComp == null)
             {
-                Debug.LogError("InventorySlot component missing on slot prefab instance!");
+                Debug.LogError("InventorySlot component missing on slot instance!");
                 continue;
             }
 
-            if (inventorySlot.itemNameText == null)
+            if (slotComp.itemNameText == null)
             {
                 Debug.LogError("itemNameText is NULL in InventorySlot script!");
                 continue;
             }
 
-            inventorySlot.SetItemName(item);
+            slotComp.SetItemName(items[index]);
+        }
+
+        // Deactivate any leftover UI children
+        for (; index < slotParent.childCount; index++)
+        {
+            slotParent.GetChild(index).gameObject.SetActive(false);
         }
     }
 }

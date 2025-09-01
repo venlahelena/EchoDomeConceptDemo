@@ -10,7 +10,16 @@ public class InteractionPickup : MonoBehaviour, IInteractable
     public string itemName = "Item";
     [TextArea] public string pickupMessage = "You found something!";
     public bool isPickedUp = false;
+    void Start()
+    {
+        // Register in Start to ensure managers (Awake) have run and prevent PPtr dereference issues during load
+        InteractionManager.Instance?.RegisterInteractable(this);
+    }
 
+    void OnDisable()
+    {
+        InteractionManager.Instance?.UnregisterInteractable(this);
+    }
     public void Interact()
     {
         if (isPickedUp) return;

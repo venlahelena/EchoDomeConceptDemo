@@ -5,6 +5,19 @@ using TMPro;
 
 public class LifeSupportManager : MonoBehaviour
 {
+    public static LifeSupportManager Instance;
+
+    void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+    Instance = this;
+    GameObjectUtils.PreserveRoot(this);
+    }
+
     [Header("Oxygen Settings")]
     [Range(0, 100)]
     public float oxygenLevel = 100f;

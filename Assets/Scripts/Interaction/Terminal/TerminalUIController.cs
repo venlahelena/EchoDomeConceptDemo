@@ -19,28 +19,111 @@ public class TerminalUIController : MonoBehaviour
     [Header("Log Entries")]
     public List<LogEntry> logs;
 
+    // Cached references
+    LifeSupportManager lifeSupport;
+
     void Start()
     {
-        PopulateLogList();
-        logDetailPanel.SetActive(false);
+    // Cache managers and initialize UI
+    lifeSupport = LifeSupportManager.Instance;
+    PopulateLogList();
+    if (logDetailPanel != null) logDetailPanel.SetActive(false);
 
-        backButton.onClick.AddListener(ShowLogList);
-        exitButton.onClick.AddListener(CloseTerminal);
+    if (backButton != null) backButton.onClick.AddListener(ShowLogList);
+    if (exitButton != null) exitButton.onClick.AddListener(CloseTerminal);
     }
 
     void PopulateLogList()
     {
-        foreach (Transform child in logListParent)
-            Destroy(child.gameObject);
+        if (logButtonPrefab == null)
+        {
+            Debug.LogError("TerminalUIController: logButtonPrefab is not assigned.");
+            return;
+        }
 
+        int index = 0;
         foreach (var log in logs)
         {
-            GameObject buttonObj = Instantiate(logButtonPrefab, logListParent);
-            var textComponent = buttonObj.GetComponentInChildren<TextMeshProUGUI>();
+            bool canShow = true;
+            // Show if unlocked in GameState OR if oxygen requirement is met (or no requirement)
+            if (GameStateManager.Instance != null && GameStateManager.Instance.IsLogUnlocked(log.logID))
+            {
+                canShow = true;
+            }
+            else if (log.requiredOxygenLevel > 0f && lifeSupport != null)
+            {
+                if (lifeSupport.oxygenLevel < log.requiredOxygenLevel)
+                    canShow = false;
+            }
+            if (!canShow) continue;
+
+            var btn = UIUtils.GetOrCreateChildComponent<Button>(logListParent, logButtonPrefab, index);
+            if (btn == null) continue;
+
+            var textComponent = btn.GetComponentInChildren<TextMeshProUGUI>();
             if (textComponent != null)
                 textComponent.text = log.title;
 
-            buttonObj.GetComponent<Button>().onClick.AddListener(() => ShowLogDetail(log));
+            btn.onClick.RemoveAllListeners();
+            btn.onClick.AddListener(() => TryShowLogDetail(log));
+
+            index++;
+        }
+
+        for (int childIndex = index; childIndex < logListParent.childCount; childIndex++)
+        {
+            logListParent.GetChild(childIndex).gameObject.SetActive(false);
+        }
+    }
+
+    public GameObject passwordPanel;
+    public TMP_InputField passwordInputField;
+    public Button passwordSubmitButton;
+    private LogEntry pendingPasswordLog;
+
+    void Awake()
+    {
+        if (passwordPanel != null)
+            passwordPanel.SetActive(false);
+        if (passwordSubmitButton != null)
+            passwordSubmitButton.onClick.AddListener(OnPasswordSubmit);
+    }
+
+    void TryShowLogDetail(LogEntry log)
+    {
+        if (!string.IsNullOrEmpty(log.password))
+        {
+            pendingPasswordLog = log;
+            passwordPanel.SetActive(true);
+            logDetailPanel.SetActive(false);
+            logListParent.gameObject.SetActive(false);
+        }
+        else
+        {
+            ShowLogDetail(log);
+            if (GameStateManager.Instance != null)
+                GameStateManager.Instance.UnlockLog(log.logID);
+        }
+    }
+
+    void OnPasswordSubmit()
+    {
+        if (pendingPasswordLog != null && passwordInputField != null)
+        {
+            if (passwordInputField.text == pendingPasswordLog.password)
+            {
+                ShowLogDetail(pendingPasswordLog);
+                if (GameStateManager.Instance != null)
+                    GameStateManager.Instance.UnlockLog(pendingPasswordLog.logID);
+                passwordPanel.SetActive(false);
+                passwordInputField.text = "";
+                pendingPasswordLog = null;
+            }
+            else
+            {
+                // Optionally show error message
+                passwordInputField.text = "";
+            }
         }
     }
 
@@ -51,6 +134,8 @@ public class TerminalUIController : MonoBehaviour
 
         logDetailPanel.SetActive(true);
         logListParent.gameObject.SetActive(false);
+        if (passwordPanel != null)
+            passwordPanel.SetActive(false);
     }
 
     public void ShowLogList()

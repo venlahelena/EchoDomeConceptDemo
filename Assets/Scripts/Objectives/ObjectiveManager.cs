@@ -1,6 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System;
+using System.Linq;
 
 public class ObjectiveManager : MonoBehaviour
 {
@@ -8,30 +10,85 @@ public class ObjectiveManager : MonoBehaviour
 
     public TMPro.TextMeshProUGUI objectiveText;
 
-    private string currentObjective;
+    // Simple objective model
+    [Serializable]
+    public class Objective
+    {
+        public string id;
+        public string title;
+        public string description;
+        public bool completed = false;
+        public string timestamp; // ISO string when completed or added
+    }
+
+    // Ordered list of objectives
+    private List<Objective> objectives = new List<Objective>();
+
+    // Quick access to currently active objective (first incomplete)
+    public Objective CurrentObjective => objectives.FirstOrDefault(o => !o.completed);
+
+    // Events
+    public event Action<Objective> OnObjectiveAdded;
+    public event Action<Objective> OnObjectiveCompleted;
 
     void Awake()
-{
-    if (Instance != null && Instance != this)
     {
-        Destroy(gameObject);
-        return;
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+        GameObjectUtils.PreserveRoot(this);
     }
-    Instance = this;
-    DontDestroyOnLoad(transform.root.gameObject);
-}
 
 
     public void SetObjective(string newObjective)
     {
-        currentObjective = newObjective;
+        // Backwards-compat: replace active objective with a simple string
+        objectives.Clear();
+        objectives.Add(new Objective { id = "legacy", title = newObjective, description = newObjective, completed = false });
         UpdateUI();
     }
 
+    public void AddObjective(string id, string title, string description)
+    {
+        if (string.IsNullOrEmpty(id)) id = Guid.NewGuid().ToString();
+        if (objectives.Exists(o => o.id == id)) return;
+        var obj = new Objective { id = id, title = title, description = description, completed = false, timestamp = System.DateTime.UtcNow.ToString("o") };
+        objectives.Add(obj);
+        OnObjectiveAdded?.Invoke(obj);
+        UpdateUI();
+    }
+
+    public void CompleteObjective(string id)
+    {
+        var obj = objectives.Find(o => o.id == id);
+        if (obj == null) return;
+        if (obj.completed) return;
+        obj.completed = true;
+        obj.timestamp = System.DateTime.UtcNow.ToString("o");
+        OnObjectiveCompleted?.Invoke(obj);
+        UpdateUI();
+    }
+
+    public Objective GetObjective(string id) => objectives.Find(o => o.id == id);
+
+    public List<Objective> GetAllObjectives() => objectives;
+
     private void UpdateUI()
     {
-        if (objectiveText != null)
-            objectiveText.text = "Objective: " + currentObjective;
+        if (objectiveText == null) return;
+
+        var active = CurrentObjective;
+        if (active != null)
+        {
+            objectiveText.text = $"Objective: {active.title} ({objectives.Count(o => !o.completed)} remaining)";
+        }
+        else
+        {
+            objectiveText.text = "Objective: None";
+        }
     }
 }
 
