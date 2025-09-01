@@ -29,51 +29,27 @@ public class TerminalUIController : MonoBehaviour
     PopulateLogList();
     if (logDetailPanel != null) logDetailPanel.SetActive(false);
 
-    if (backButton != null) backButton.onClick.AddListener(ShowLogList);
-    if (exitButton != null) exitButton.onClick.AddListener(CloseTerminal);
+    if (backButton != null) backButton.onClick.AddListener(() => ShowLogList());
+    if (exitButton != null) exitButton.onClick.AddListener(() => CloseTerminal());
     }
 
-    void PopulateLogList()
+    // ...existing code...
+
+    /// <summary>
+    /// Opens this terminal UI and populates it with the provided logs (used by TerminalInteractable on prefabs).
+    /// If you want a terminal to use its own per-prefab logs, call this method from the interactable component.
+    /// </summary>
+    public void ShowForLogs(List<LogEntry> terminalLogs)
     {
-        if (logButtonPrefab == null)
-        {
-            Debug.LogError("TerminalUIController: logButtonPrefab is not assigned.");
-            return;
-        }
+        // Only override the controller's logs if the provided list is non-null and contains entries.
+        // This preserves the global/default logs when a terminal's `localLogs` is left empty in the inspector.
+        if (terminalLogs != null && terminalLogs.Count > 0)
+            this.logs = terminalLogs;
 
-        int index = 0;
-        foreach (var log in logs)
-        {
-            bool canShow = true;
-            // Show if unlocked in GameState OR if oxygen requirement is met (or no requirement)
-            if (GameStateManager.Instance != null && GameStateManager.Instance.IsLogUnlocked(log.logID))
-            {
-                canShow = true;
-            }
-            else if (log.requiredOxygenLevel > 0f && lifeSupport != null)
-            {
-                if (lifeSupport.oxygenLevel < log.requiredOxygenLevel)
-                    canShow = false;
-            }
-            if (!canShow) continue;
-
-            var btn = UIUtils.GetOrCreateChildComponent<Button>(logListParent, logButtonPrefab, index);
-            if (btn == null) continue;
-
-            var textComponent = btn.GetComponentInChildren<TextMeshProUGUI>();
-            if (textComponent != null)
-                textComponent.text = log.title;
-
-            btn.onClick.RemoveAllListeners();
-            btn.onClick.AddListener(() => TryShowLogDetail(log));
-
-            index++;
-        }
-
-        for (int childIndex = index; childIndex < logListParent.childCount; childIndex++)
-        {
-            logListParent.GetChild(childIndex).gameObject.SetActive(false);
-        }
+    // Ensure UI is visible and populated
+    if (terminalPanel != null) terminalPanel.SetActive(true);
+    PopulateLogList();
+        if (logDetailPanel != null) logDetailPanel.SetActive(false);
     }
 
     public GameObject passwordPanel;
@@ -115,7 +91,7 @@ public class TerminalUIController : MonoBehaviour
                 ShowLogDetail(pendingPasswordLog);
                 if (GameStateManager.Instance != null)
                     GameStateManager.Instance.UnlockLog(pendingPasswordLog.logID);
-                passwordPanel.SetActive(false);
+                if (passwordPanel != null) passwordPanel.SetActive(false);
                 passwordInputField.text = "";
                 pendingPasswordLog = null;
             }
@@ -129,23 +105,84 @@ public class TerminalUIController : MonoBehaviour
 
     public void ShowLogDetail(LogEntry log)
     {
-        logTitleText.text = log.title;
-        logContentText.text = log.content;
+        if (logTitleText != null) logTitleText.text = log.title;
+        if (logContentText != null) logContentText.text = log.content;
 
-        logDetailPanel.SetActive(true);
-        logListParent.gameObject.SetActive(false);
-        if (passwordPanel != null)
-            passwordPanel.SetActive(false);
+        if (logDetailPanel != null) logDetailPanel.SetActive(true);
+        if (logListParent != null) logListParent.gameObject.SetActive(false);
+        if (passwordPanel != null) passwordPanel.SetActive(false);
     }
 
     public void ShowLogList()
     {
-        logDetailPanel.SetActive(false);
-        logListParent.gameObject.SetActive(true);
+        if (logDetailPanel != null) logDetailPanel.SetActive(false);
+        if (logListParent != null) logListParent.gameObject.SetActive(true);
     }
 
     public void CloseTerminal()
     {
-        terminalPanel.SetActive(false);
+        if (terminalPanel != null) terminalPanel.SetActive(false);
+    }
+
+    void PopulateLogList()
+    {
+        if (logButtonPrefab == null)
+        {
+            Debug.LogError("TerminalUIController: logButtonPrefab is not assigned.");
+            return;
+        }
+
+        if (logListParent == null)
+        {
+            Debug.LogError("TerminalUIController: logListParent is not assigned.", this);
+            return;
+        }
+
+        if (logs == null || logs.Count == 0)
+        {
+            Debug.LogWarning($"TerminalUIController.PopulateLogList: no logs to show (logs is null or empty). logsCount={(logs==null?0:logs.Count)}", this);
+        }
+
+        int index = 0;
+        for (int i = 0; i < (logs != null ? logs.Count : 0); i++)
+        {
+            var log = logs[i];
+            if (log == null)
+            {
+                Debug.LogWarning($"TerminalUIController: encountered null LogEntry in logs list at index {i}", this);
+                continue;
+            }
+
+            // Oxygen-level gating removed: list all logs regardless of LifeSupport oxygen.
+            bool unlocked = GameStateManager.Instance != null && GameStateManager.Instance.IsLogUnlocked(log.logID);
+
+            // passworded logs are still shown but will prompt when opened; report that for debugging
+            if (!string.IsNullOrEmpty(log.password))
+            {
+                Debug.Log($"TerminalUIController: log '{log.title}' (id={log.logID}) is password protected and will prompt on open.", this);
+            }
+
+            var btn = UIUtils.GetOrCreateChildComponent<Button>(logListParent, logButtonPrefab, index);
+            if (btn == null)
+            {
+                string prefabName = logButtonPrefab != null ? logButtonPrefab.name : "<null prefab>";
+                Debug.LogError($"TerminalUIController: failed to get Button from prefab '{prefabName}' — check that the prefab contains a UnityEngine.UI.Button component.", this);
+                continue;
+            }
+
+            var textComponent = btn.GetComponentInChildren<TextMeshProUGUI>();
+            if (textComponent != null)
+                textComponent.text = log.title;
+
+            btn.onClick.RemoveAllListeners();
+            btn.onClick.AddListener(() => TryShowLogDetail(log));
+
+            index++;
+        }
+
+        for (int childIndex = index; childIndex < logListParent.childCount; childIndex++)
+        {
+            logListParent.GetChild(childIndex).gameObject.SetActive(false);
+        }
     }
 }

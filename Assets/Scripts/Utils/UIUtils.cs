@@ -35,6 +35,18 @@ public static class UIUtils
     {
         var go = GetOrCreateChild(parent, prefab, index);
         if (go == null) return null;
-        return go.GetComponent<T>();
+
+        var comp = go.GetComponent<T>();
+        if (comp == null && prefab != null)
+        {
+            // If the existing child at this index doesn't have the requested component,
+            // instantiate a fresh prefab instance and place it at the same sibling index.
+            var newGo = Object.Instantiate(prefab, parent);
+            newGo.SetActive(true);
+            newGo.transform.SetSiblingIndex(index);
+            return newGo.GetComponent<T>();
+        }
+
+        return comp;
     }
 }

@@ -37,6 +37,9 @@ public class GameStateManager : MonoBehaviour
 {
     public static GameStateManager Instance;
 
+    // Event fired when a log is unlocked. Argument: logID
+    public event System.Action<string> OnLogUnlocked;
+
     private HashSet<string> unlockedLogs = new HashSet<string>();
     private Dictionary<string, int> plantStates = new Dictionary<string, int>();
     private Dictionary<string, string> dialogueChoices = new Dictionary<string, string>();
@@ -69,6 +72,14 @@ public class GameStateManager : MonoBehaviour
         if (unlockedLogs.Add(logID))
         {
             Save();
+            try
+            {
+                OnLogUnlocked?.Invoke(logID);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning("GameStateManager: OnLogUnlocked handler threw: " + ex.Message);
+            }
         }
     }
 

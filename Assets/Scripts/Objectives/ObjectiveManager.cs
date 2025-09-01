@@ -40,6 +40,26 @@ public class ObjectiveManager : MonoBehaviour
         }
         Instance = this;
         GameObjectUtils.PreserveRoot(this);
+
+        // Subscribe to log unlocks to auto-complete objectives if they match
+        if (GameStateManager.Instance != null)
+            GameStateManager.Instance.OnLogUnlocked += OnLogUnlocked;
+    }
+
+    void OnDestroy()
+    {
+        if (GameStateManager.Instance != null)
+            GameStateManager.Instance.OnLogUnlocked -= OnLogUnlocked;
+    }
+
+    void OnLogUnlocked(string logID)
+    {
+        // If there's an objective with the same id as the log, mark it complete
+        var obj = objectives.Find(o => o.id == logID);
+        if (obj != null && !obj.completed)
+        {
+            CompleteObjective(obj.id);
+        }
     }
 
 
