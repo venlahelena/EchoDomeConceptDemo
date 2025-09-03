@@ -15,6 +15,8 @@ public class DialogueStarter : MonoBehaviour, IInteractable
 {
     public DialogueNode startingNode;
     public DialogueNode gatedNode; // Dialogue shown only if oxygen is high enough
+    public DialogueNodeSO startingNodeSO;
+    public DialogueNodeSO gatedNodeSO; // prefer SOs when available
     public float requiredOxygenLevel = 60f; // Example threshold for gated dialogue
 
     LifeSupportManager lifeSupport;
@@ -36,6 +38,22 @@ public class DialogueStarter : MonoBehaviour, IInteractable
             return;
         }
 
+        // Prefer ScriptableObjects when provided (designer-friendly assets)
+        if (lifeSupport != null && gatedNodeSO != null)
+        {
+            if (lifeSupport.oxygenLevel >= requiredOxygenLevel)
+            {
+                runner.StartDialogue(gatedNodeSO);
+                return;
+            }
+        }
+
+        if (startingNodeSO != null)
+        {
+            runner.StartDialogue(startingNodeSO);
+            return;
+        }
+
         if (lifeSupport != null && gatedNode != null)
         {
             if (lifeSupport.oxygenLevel >= requiredOxygenLevel)
@@ -45,7 +63,8 @@ public class DialogueStarter : MonoBehaviour, IInteractable
             }
         }
 
-        runner.StartDialogue(startingNode);
+        if (startingNode != null)
+            runner.StartDialogue(startingNode);
     }
 }
 

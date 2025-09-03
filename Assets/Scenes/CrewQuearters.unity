@@ -940,7 +940,7 @@ GameObject:
   - component: {fileID: 410227392}
   - component: {fileID: 410227391}
   m_Layer: 5
-  m_Name: ObjectiveText
+  m_Name: MainObjectiveText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1451,6 +1451,17 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 8982681524331023154, guid: 2ddc12c93de4af14caff453cabd54ee8, type: 3}
   m_PrefabInstance: {fileID: 1561059811}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &941261315 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6258467767832790622, guid: 36053f695eaa06647a65bca974971b3e, type: 3}
+  m_PrefabInstance: {fileID: 1012455770126821435}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &960159205
 GameObject:
   m_ObjectHideFlags: 0
@@ -2146,6 +2157,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   objectiveText: {fileID: 410227391}
+  initialObjectives:
+  - {fileID: 11400000, guid: 89e0e8928ff932049a361445866c0f77, type: 2}
+  objectiveDetailText: {fileID: 941261315}
 --- !u!1 &1352168242
 GameObject:
   m_ObjectHideFlags: 0
@@ -3394,7 +3408,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   terminalPanel: {fileID: 421043652}
-  logButtonPrefab: {fileID: 1741639934351389368, guid: f3d18814884939046899c560efc62254, type: 3}
+  logButtonPrefab: {fileID: 3759113123427050833, guid: f3d18814884939046899c560efc62254, type: 3}
   logListParent: {fileID: 1854856273}
   logDetailPanel: {fileID: 1088295030}
   logTitleText: {fileID: 0}

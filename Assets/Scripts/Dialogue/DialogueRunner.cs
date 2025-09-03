@@ -24,6 +24,7 @@ public class DialogueRunner : MonoBehaviour
     public Button choiceButtonPrefab;
 
     private DialogueNode currentNode;
+    private DialogueNodeSO currentNodeSO;
 
     public void StartDialogue(DialogueNode startingNode)
     {
@@ -31,14 +32,21 @@ public class DialogueRunner : MonoBehaviour
         DisplayNode(startingNode);
     }
 
+    public void StartDialogue(DialogueNodeSO startingNodeSO)
+    {
+        dialoguePanel.SetActive(true);
+        DisplayNode(startingNodeSO);
+    }
+
     void DisplayNode(DialogueNode node)
     {
         currentNode = node;
+        currentNodeSO = null;
         speakerText.text = node.speakerName;
         dialogueText.text = node.line;
         // Reuse existing choice buttons where possible
         int index = 0;
-        if (node.choices != null && node.choices.Length > 0)
+    if (node.choices != null && node.choices.Length > 0)
         {
             foreach (var choice in node.choices)
             {
@@ -89,6 +97,71 @@ public class DialogueRunner : MonoBehaviour
         }
 
         // Deactivate any extra buttons
+        for (int childIndex = index; childIndex < choicesContainer.childCount; childIndex++)
+        {
+            choicesContainer.GetChild(childIndex).gameObject.SetActive(false);
+        }
+    }
+
+    // Display method for ScriptableObject-based dialogue nodes
+    void DisplayNode(DialogueNodeSO nodeSO)
+    {
+        if (nodeSO == null) return;
+        currentNode = null;
+        currentNodeSO = nodeSO;
+
+        speakerText.text = nodeSO.speakerName;
+        dialogueText.text = nodeSO.line;
+
+        int index = 0;
+        if (nodeSO.choices != null && nodeSO.choices.Length > 0)
+        {
+            foreach (var choice in nodeSO.choices)
+            {
+                Button buttonObj = UIUtils.GetOrCreateChildComponent<Button>(choicesContainer, choiceButtonPrefab.gameObject, index);
+                if (buttonObj == null) continue;
+
+                var label = buttonObj.GetComponentInChildren<TextMeshProUGUI>();
+                if (label != null) label.text = choice.choiceText;
+
+                buttonObj.onClick.RemoveAllListeners();
+                var capturedChoice = choice;
+                buttonObj.onClick.AddListener(() =>
+                {
+                    if (!string.IsNullOrEmpty(nodeSO.nodeID) && GameStateManager.Instance != null)
+                        GameStateManager.Instance.SetDialogueChoice(nodeSO.nodeID, capturedChoice.choiceText);
+
+                    if (capturedChoice != null && !string.IsNullOrEmpty(capturedChoice.npcID) && capturedChoice.trustDelta != 0 && GameStateManager.Instance != null)
+                    {
+                        GameStateManager.Instance.ModifyNpcTrust(capturedChoice.npcID, capturedChoice.trustDelta);
+                    }
+
+                    DisplayNode(capturedChoice.nextNode);
+                });
+
+                index++;
+            }
+        }
+        else
+        {
+            Button buttonObj = UIUtils.GetOrCreateChildComponent<Button>(choicesContainer, choiceButtonPrefab.gameObject, index);
+            if (buttonObj == null) return;
+
+            var label = buttonObj.GetComponentInChildren<TextMeshProUGUI>();
+            if (label != null) label.text = "Continue";
+
+            buttonObj.onClick.RemoveAllListeners();
+            buttonObj.onClick.AddListener(() =>
+            {
+                if (!string.IsNullOrEmpty(nodeSO.nodeID) && GameStateManager.Instance != null)
+                    GameStateManager.Instance.SetDialogueChoice(nodeSO.nodeID, "__visited__");
+
+                EndDialogue();
+            });
+
+            index++;
+        }
+
         for (int childIndex = index; childIndex < choicesContainer.childCount; childIndex++)
         {
             choicesContainer.GetChild(childIndex).gameObject.SetActive(false);

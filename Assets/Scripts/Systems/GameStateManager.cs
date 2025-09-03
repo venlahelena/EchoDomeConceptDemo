@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
+// using System.IO; // file IO disabled until a save system is implemented
 using UnityEngine;
 
 [Serializable]
@@ -44,6 +44,8 @@ public class GameStateManager : MonoBehaviour
 
     // Event fired when a log is unlocked. Argument: logID
     public event System.Action<string> OnLogUnlocked;
+    // Event fired when a dialogue node choice or visit is recorded. Arguments: nodeID, choiceText
+    public event System.Action<string, string> OnDialogueChoiceRecorded;
 
     // Internal runtime state (kept private but with clearer names)
     private HashSet<string> unlockedLogIds = new HashSet<string>();
@@ -51,8 +53,7 @@ public class GameStateManager : MonoBehaviour
     private Dictionary<string, string> dialogueChoiceByNodeId = new Dictionary<string, string>();
     private Dictionary<string, int> npcTrustById = new Dictionary<string, int>();
 
-    // Full path to the save file on disk
-    private string SaveFilePath => Path.Combine(Application.persistentDataPath, "gamestate.json");
+    // Save system is currently disabled. Persistent save/load will be added later.
 
     void Awake()
     {
@@ -102,6 +103,14 @@ public class GameStateManager : MonoBehaviour
     if (string.IsNullOrEmpty(nodeID)) return;
     dialogueChoiceByNodeId[nodeID] = choiceText;
         Save();
+        try
+        {
+            OnDialogueChoiceRecorded?.Invoke(nodeID, choiceText);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning("GameStateManager: OnDialogueChoiceRecorded handler threw: " + ex.Message);
+        }
     }
 
     // NPC trust APIs
@@ -144,78 +153,16 @@ public class GameStateManager : MonoBehaviour
 
     public void Save()
     {
-        try
-        {
-            GameStateData data = new GameStateData();
-            // Keep the serialized shape compatible with previous saves by populating GameStateData fields
-            data.unlockedLogs = new List<string>(unlockedLogIds);
-            data.plantStates = new List<PlantStateEntry>();
-            foreach (var kv in plantStateById)
-            {
-                data.plantStates.Add(new PlantStateEntry { plantID = kv.Key, healthValue = kv.Value });
-            }
-            data.dialogueChoices = new List<DialogueChoiceEntry>();
-            foreach (var kv in dialogueChoiceByNodeId)
-            {
-                data.dialogueChoices.Add(new DialogueChoiceEntry { nodeID = kv.Key, choiceText = kv.Value });
-            }
-            data.npcTrust = new List<NpcTrustEntry>();
-            foreach (var kv in npcTrustById)
-            {
-                data.npcTrust.Add(new NpcTrustEntry { npcID = kv.Key, trustValue = kv.Value });
-            }
-
-            string json = JsonUtility.ToJson(data, true);
-            File.WriteAllText(saveFile, json);
-        }
-        catch (Exception ex)
-        {
-            Debug.LogWarning("GameStateManager: Failed to save game state: " + ex.Message);
-        }
+        // Save disabled: no persistent save system yet.
+        // This method is intentionally a no-op until a save system is introduced.
+        return;
     }
 
     public void Load()
     {
-        try
-        {
-            if (!File.Exists(saveFile)) return;
-            string json = File.ReadAllText(saveFile);
-            GameStateData data = JsonUtility.FromJson<GameStateData>(json);
-            if (data == null) return;
-
-            unlockedLogIds = new HashSet<string>(data.unlockedLogs ?? new List<string>());
-            plantStateById = new Dictionary<string, int>();
-            if (data.plantStates != null)
-            {
-                foreach (var plantEntry in data.plantStates)
-                {
-                    if (!string.IsNullOrEmpty(plantEntry.plantID))
-                        plantStateById[plantEntry.plantID] = plantEntry.healthValue;
-                }
-            }
-            dialogueChoiceByNodeId = new Dictionary<string, string>();
-            if (data.dialogueChoices != null)
-            {
-                foreach (var dialogueEntry in data.dialogueChoices)
-                {
-                    if (!string.IsNullOrEmpty(dialogueEntry.nodeID))
-                        dialogueChoiceByNodeId[dialogueEntry.nodeID] = dialogueEntry.choiceText;
-                }
-            }
-            npcTrustById = new Dictionary<string, int>();
-            if (data.npcTrust != null)
-            {
-                foreach (var trustEntry in data.npcTrust)
-                {
-                    if (!string.IsNullOrEmpty(trustEntry.npcID))
-                        npcTrustById[trustEntry.npcID] = trustEntry.trustValue;
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.LogWarning("GameStateManager: Failed to load game state: " + ex.Message);
-        }
+        // Load disabled: no persistent save system yet.
+        // Runtime state will remain initialized from defaults.
+        return;
     }
 
     void OnApplicationQuit()
