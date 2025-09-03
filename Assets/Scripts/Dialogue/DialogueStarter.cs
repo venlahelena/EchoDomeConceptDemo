@@ -2,6 +2,15 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Starts a dialogue when interacted with. Can optionally gate a special dialogue node behind an oxygen threshold.
+/// </summary>
+/* Editor notes:
+ - Assign `startingNode` and optionally `gatedNode` in the inspector.
+ - Set `requiredOxygenLevel` to gate the `gatedNode` behind LifeSupport oxygen.
+ - Ensure a `DialogueRunner` exists in the scene (auto-located at Start if not assigned).
+*/
+
 public class DialogueStarter : MonoBehaviour, IInteractable
 {
     public DialogueNode startingNode;

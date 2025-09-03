@@ -2,6 +2,16 @@ using System;
 using UnityEngine;
 using UnityEngine.Events;
 
+/// <summary>
+/// Controls a plant's visual state based on current oxygen. Exposes UnityEvents for state changes.
+/// Attach sprites for each state and optionally assign a unique `plantID` to persist state via GameStateManager.
+/// </summary>
+/* Editor notes:
+ - Assign the 4 sprites (thriving, wilting, sick, dead) to represent plant visuals.
+ - Set thresholds (thrivingThreshold, wiltingThreshold, sickThreshold) to tune when states change.
+ - Optionally assign `plantID` to persist the state across sessions.
+*/
+
 [RequireComponent(typeof(SpriteRenderer))]
 public class PlantStateController : MonoBehaviour
 {

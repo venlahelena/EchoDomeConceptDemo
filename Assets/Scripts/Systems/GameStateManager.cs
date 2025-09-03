@@ -33,6 +33,11 @@ public class NpcTrustEntry
     public int trustValue;
 }
 
+/// <summary>
+/// Singleton that manages persistent game state: unlocked logs, plant states, dialogue choices, and NPC trust.
+/// Provides simple Save/Load using JsonUtility to Application.persistentDataPath.
+/// Exposes APIs to modify state and query persisted values. Fires <c>OnLogUnlocked</c> when logs are unlocked.
+/// </summary>
 public class GameStateManager : MonoBehaviour
 {
     public static GameStateManager Instance;
@@ -40,12 +45,14 @@ public class GameStateManager : MonoBehaviour
     // Event fired when a log is unlocked. Argument: logID
     public event System.Action<string> OnLogUnlocked;
 
-    private HashSet<string> unlockedLogs = new HashSet<string>();
-    private Dictionary<string, int> plantStates = new Dictionary<string, int>();
-    private Dictionary<string, string> dialogueChoices = new Dictionary<string, string>();
-    private Dictionary<string, int> npcTrust = new Dictionary<string, int>();
+    // Internal runtime state (kept private but with clearer names)
+    private HashSet<string> unlockedLogIds = new HashSet<string>();
+    private Dictionary<string, int> plantStateById = new Dictionary<string, int>();
+    private Dictionary<string, string> dialogueChoiceByNodeId = new Dictionary<string, string>();
+    private Dictionary<string, int> npcTrustById = new Dictionary<string, int>();
 
-    string saveFile => Path.Combine(Application.persistentDataPath, "gamestate.json");
+    // Full path to the save file on disk
+    private string SaveFilePath => Path.Combine(Application.persistentDataPath, "gamestate.json");
 
     void Awake()
     {
@@ -62,14 +69,14 @@ public class GameStateManager : MonoBehaviour
 
     public bool IsLogUnlocked(string logID)
     {
-        if (string.IsNullOrEmpty(logID)) return false;
-        return unlockedLogs.Contains(logID);
+    if (string.IsNullOrEmpty(logID)) return false;
+    return unlockedLogIds.Contains(logID);
     }
 
     public void UnlockLog(string logID)
     {
-        if (string.IsNullOrEmpty(logID)) return;
-        if (unlockedLogs.Add(logID))
+    if (string.IsNullOrEmpty(logID)) return;
+    if (unlockedLogIds.Add(logID))
         {
             Save();
             try
@@ -85,54 +92,54 @@ public class GameStateManager : MonoBehaviour
 
     public void SetPlantState(string plantID, int healthValue)
     {
-        if (string.IsNullOrEmpty(plantID)) return;
-        plantStates[plantID] = healthValue;
+    if (string.IsNullOrEmpty(plantID)) return;
+    plantStateById[plantID] = healthValue;
         Save();
     }
 
     public void SetDialogueChoice(string nodeID, string choiceText)
     {
-        if (string.IsNullOrEmpty(nodeID)) return;
-        dialogueChoices[nodeID] = choiceText;
+    if (string.IsNullOrEmpty(nodeID)) return;
+    dialogueChoiceByNodeId[nodeID] = choiceText;
         Save();
     }
 
     // NPC trust APIs
     public void SetNpcTrust(string npcID, int trustValue)
     {
-        if (string.IsNullOrEmpty(npcID)) return;
-        npcTrust[npcID] = trustValue;
+    if (string.IsNullOrEmpty(npcID)) return;
+    npcTrustById[npcID] = trustValue;
         Save();
     }
 
     public void ModifyNpcTrust(string npcID, int delta)
     {
-        if (string.IsNullOrEmpty(npcID)) return;
-        int current = 0;
-        npcTrust.TryGetValue(npcID, out current);
-        npcTrust[npcID] = current + delta;
+    if (string.IsNullOrEmpty(npcID)) return;
+    int current = 0;
+    npcTrustById.TryGetValue(npcID, out current);
+    npcTrustById[npcID] = current + delta;
         Save();
     }
 
     public bool TryGetNpcTrust(string npcID, out int trustValue)
     {
-        trustValue = 0;
-        if (string.IsNullOrEmpty(npcID)) return false;
-        return npcTrust.TryGetValue(npcID, out trustValue);
+    trustValue = 0;
+    if (string.IsNullOrEmpty(npcID)) return false;
+    return npcTrustById.TryGetValue(npcID, out trustValue);
     }
 
     public bool TryGetDialogueChoice(string nodeID, out string choiceText)
     {
-        choiceText = null;
-        if (string.IsNullOrEmpty(nodeID)) return false;
-        return dialogueChoices.TryGetValue(nodeID, out choiceText);
+    choiceText = null;
+    if (string.IsNullOrEmpty(nodeID)) return false;
+    return dialogueChoiceByNodeId.TryGetValue(nodeID, out choiceText);
     }
 
     public bool TryGetPlantState(string plantID, out int healthValue)
     {
-        healthValue = -1;
-        if (string.IsNullOrEmpty(plantID)) return false;
-        return plantStates.TryGetValue(plantID, out healthValue);
+    healthValue = -1;
+    if (string.IsNullOrEmpty(plantID)) return false;
+    return plantStateById.TryGetValue(plantID, out healthValue);
     }
 
     public void Save()
@@ -140,19 +147,20 @@ public class GameStateManager : MonoBehaviour
         try
         {
             GameStateData data = new GameStateData();
-            data.unlockedLogs = new List<string>(unlockedLogs);
+            // Keep the serialized shape compatible with previous saves by populating GameStateData fields
+            data.unlockedLogs = new List<string>(unlockedLogIds);
             data.plantStates = new List<PlantStateEntry>();
-            foreach (var kv in plantStates)
+            foreach (var kv in plantStateById)
             {
                 data.plantStates.Add(new PlantStateEntry { plantID = kv.Key, healthValue = kv.Value });
             }
             data.dialogueChoices = new List<DialogueChoiceEntry>();
-            foreach (var kv in dialogueChoices)
+            foreach (var kv in dialogueChoiceByNodeId)
             {
                 data.dialogueChoices.Add(new DialogueChoiceEntry { nodeID = kv.Key, choiceText = kv.Value });
             }
             data.npcTrust = new List<NpcTrustEntry>();
-            foreach (var kv in npcTrust)
+            foreach (var kv in npcTrustById)
             {
                 data.npcTrust.Add(new NpcTrustEntry { npcID = kv.Key, trustValue = kv.Value });
             }
@@ -175,32 +183,32 @@ public class GameStateManager : MonoBehaviour
             GameStateData data = JsonUtility.FromJson<GameStateData>(json);
             if (data == null) return;
 
-            unlockedLogs = new HashSet<string>(data.unlockedLogs ?? new List<string>());
-            plantStates = new Dictionary<string, int>();
+            unlockedLogIds = new HashSet<string>(data.unlockedLogs ?? new List<string>());
+            plantStateById = new Dictionary<string, int>();
             if (data.plantStates != null)
             {
                 foreach (var plantEntry in data.plantStates)
                 {
                     if (!string.IsNullOrEmpty(plantEntry.plantID))
-                        plantStates[plantEntry.plantID] = plantEntry.healthValue;
+                        plantStateById[plantEntry.plantID] = plantEntry.healthValue;
                 }
             }
-            dialogueChoices = new Dictionary<string, string>();
+            dialogueChoiceByNodeId = new Dictionary<string, string>();
             if (data.dialogueChoices != null)
             {
                 foreach (var dialogueEntry in data.dialogueChoices)
                 {
                     if (!string.IsNullOrEmpty(dialogueEntry.nodeID))
-                        dialogueChoices[dialogueEntry.nodeID] = dialogueEntry.choiceText;
+                        dialogueChoiceByNodeId[dialogueEntry.nodeID] = dialogueEntry.choiceText;
                 }
             }
-            npcTrust = new Dictionary<string, int>();
+            npcTrustById = new Dictionary<string, int>();
             if (data.npcTrust != null)
             {
                 foreach (var trustEntry in data.npcTrust)
                 {
                     if (!string.IsNullOrEmpty(trustEntry.npcID))
-                        npcTrust[trustEntry.npcID] = trustEntry.trustValue;
+                        npcTrustById[trustEntry.npcID] = trustEntry.trustValue;
                 }
             }
         }

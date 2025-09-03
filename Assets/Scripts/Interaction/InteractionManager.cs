@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Maintains a registry of active interactables in the scene, handles hover/prompt UI,
-/// and routes click interactions to the nearest valid interactable.
+/// Maintains a registry of active interactables in the scene, displays optional hover prompts,
+/// and routes click interactions to the nearest <see cref="IInteractable"/> within range.
+/// Interactables should register/unregister themselves via <see cref="RegisterInteractable"/> and <see cref="UnregisterInteractable"/>.
 /// </summary>
+
 public class InteractionManager : MonoBehaviour
 {
     public static InteractionManager Instance;

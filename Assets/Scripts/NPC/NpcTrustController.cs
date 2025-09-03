@@ -1,6 +1,14 @@
 using UnityEngine;
 using UnityEngine.Events;
 
+/// <summary>
+/// NPC trust controller: updates trust values in GameStateManager and exposes UnityEvents for visual/audio feedback.
+/// </summary>
+/* Editor notes:
+    - Assign a unique `npcID` to persist trust values.
+    - Hook up `onTrustIncreased` and `onTrustDecreased` to animate or change dialogue options.
+*/
+
 [RequireComponent(typeof(SpriteRenderer))]
 public class NpcTrustController : MonoBehaviour
 {

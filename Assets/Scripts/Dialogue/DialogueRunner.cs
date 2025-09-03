@@ -4,6 +4,17 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 
+/// <summary>
+/// Controls the dialogue UI: shows speaker name, line text, and dynamically builds choice buttons.
+/// Records player choices to the <see cref="GameStateManager"/> and applies any NPC trust deltas.
+/// Use <see cref="StartDialogue(DialogueNode)"/> to begin a conversation and <see cref="EndDialogue()"/> to close it.
+/// </summary>
+/* Editor notes:
+ - Assign `dialoguePanel`, `speakerText`, `dialogueText`, a `choicesContainer` and `choiceButtonPrefab`.
+ - `choiceButtonPrefab` should contain a TextMeshProUGUI for the label.
+ - Use `DialogueNode` assets to author dialogues and wire starting nodes to `DialogueStarter` interactables.
+*/
+    
 public class DialogueRunner : MonoBehaviour
 {
     public GameObject dialoguePanel;

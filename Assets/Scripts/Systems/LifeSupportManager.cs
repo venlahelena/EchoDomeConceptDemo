@@ -3,6 +3,16 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 
+/// <summary>
+/// Manages dome life support: oxygen and power levels, UI display, and simple decay over time.
+/// Use the public IncreaseOxygen/IncreasePower methods to apply repairs or boosts.
+/// </summary>
+/* Editor notes:
+ - Assign TextMeshProUGUI fields `oxygenText` and `powerText` to visible UI text elements.
+ - Tune `oxygenDecreaseRate` and `powerDecreaseRate` on the component to set pacing.
+ - For testing in Play mode: reduce rates or use the Increase* methods from the Console or a debug button to simulate repairs.
+*/
+
 public class LifeSupportManager : MonoBehaviour
 {
     public static LifeSupportManager Instance;
@@ -14,8 +24,8 @@ public class LifeSupportManager : MonoBehaviour
             Destroy(gameObject);
             return;
         }
-    Instance = this;
-    GameObjectUtils.PreserveRoot(this);
+        Instance = this;
+        GameObjectUtils.PreserveRoot(this);
     }
 
     [Header("Oxygen Settings")]

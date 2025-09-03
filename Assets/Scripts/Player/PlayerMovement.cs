@@ -1,5 +1,17 @@
 using UnityEngine;
 
+/// <summary>
+/// Handles player movement and click-to-move interactions.
+/// Supports moving within a 2D walkable PolygonCollider2D area and dispatching interactions when target reached.
+/// Use <see cref="MoveToWithInteraction(Vector3, IInteractable)"/> to move the player and trigger an interaction on arrival.
+/// </summary>
+/// 
+/* Editor notes:
+ - Assign `walkArea` to a PolygonCollider2D representing where the player can walk.
+ - Set `feetPosition` to a child transform at the player's feet for accurate overlap checks.
+ - Tune `moveSpeed` for desired pacing; in Play mode, click to move and verify player stops at the target.
+*/
+    
 public class PlayerMovement : MonoBehaviour
 {
     public float moveSpeed = 3f;
